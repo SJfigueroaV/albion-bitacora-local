@@ -27,7 +27,9 @@ const web = "https://bitacora-avalon-6d49.web.app"
 
 const (
 	anchoBusqueda, altoBusqueda = 560, 96
-	altoVista                   = 400
+	altoVista                   = 460
+	anchoFarmeo, altoFarmeo     = 300, 460
+	margenFarmeo                = 90
 	anchoRuta, altoRuta         = 400, 60
 	margenBusqueda, margenRuta  = 240, 12
 	fuera                       = -3000 // apartada de la pantalla: conserva el foco del campo de texto
@@ -47,6 +49,7 @@ const (
 	modAlt                      = 0x0001
 	modNoRepeat                 = 0x4000
 	vkE                         = 0x45
+	vkR                         = 0x52
 	wmHotkey, wmTimer           = 0x0312, 0x0113
 	dwmwaWindowCornerPreference = 33
 	dwmwcpRound                 = 2
@@ -80,6 +83,7 @@ type ventana struct {
 	alto    int
 	margen  int
 	visible bool
+	derecha bool
 }
 
 func escala(n int) int {
@@ -95,6 +99,9 @@ func (v *ventana) mover(visible bool) {
 	if visible {
 		pantalla, _, _ := getSystemMetrics.Call(smCxScreen)
 		x, y = (int(pantalla)-escala(v.ancho))/2, escala(v.margen)
+		if v.derecha {
+			x = int(pantalla) - escala(v.ancho) - escala(12)
+		}
 	}
 	setWindowPos.Call(v.hwnd, hwndTopmost, uintptr(x), uintptr(y), uintptr(escala(v.ancho)), uintptr(escala(v.alto)), swpNoActivate)
 	v.visible = visible
@@ -160,7 +167,7 @@ func nuevaVentana(v *ventana, ruta, datos string, vidrio bool, antes func(webvie
 }
 
 // Lee del puente el grupo que abrió el navegador. Si el puente se cierra, las ventanas también.
-func seguirSesion(busqueda, ruta *ventana) {
+func seguirSesion(busqueda, ruta, farmeo *ventana) {
 	var actual string
 	fallos := 0
 	cliente := http.Client{Timeout: 2 * time.Second}
@@ -183,14 +190,18 @@ func seguirSesion(busqueda, ruta *ventana) {
 		q := url.Values{"g": {s.Code}, "name": {s.Name}, "pid": {s.Pid}}.Encode()
 		busqueda.w.Dispatch(func() { busqueda.w.Navigate(web + "/buscar?" + q) })
 		ruta.w.Dispatch(func() { ruta.w.Navigate(web + "/ruta?" + q) })
+		farmeo.w.Dispatch(func() { farmeo.w.Navigate(web + "/farmeo?" + q) })
 	}
 }
 
 // El atajo y el clic fuera se atienden en un hilo propio: no dependen de ninguna ventana.
-func atenderAtajo(busqueda *ventana) {
+func atenderAtajo(busqueda, farmeo *ventana) {
 	runtime.LockOSThread()
 	if ok, _, _ := registerHotKey.Call(0, 1, modAlt|modNoRepeat, vkE); ok == 0 {
 		fmt.Println("Otro programa ya usa Alt+E.")
+	}
+	if ok, _, _ := registerHotKey.Call(0, 2, modAlt|modNoRepeat, vkR); ok == 0 {
+		fmt.Println("Otro programa ya usa Alt+R.")
 	}
 	setTimer.Call(0, 0, 150, 0)
 	var msg struct {
@@ -210,6 +221,10 @@ func atenderAtajo(busqueda *ventana) {
 		}
 		switch msg.message {
 		case wmHotkey:
+			if msg.wparam == 2 {
+				farmeo.mover(!farmeo.visible) // sin quitarle el teclado al juego
+				continue
+			}
 			if busqueda.visible {
 				busqueda.mover(false)
 				setForegroundWindow.Call(anterior)
@@ -250,8 +265,12 @@ func runVentanas() {
 		w.Bind("bitacoraRuta", func(activa bool) { ruta.mover(activa) })
 	}, &listas)
 	listas.Wait()
-	go seguirSesion(busqueda, ruta)
-	atenderAtajo(busqueda)
+	farmeo := &ventana{ancho: anchoFarmeo, alto: altoFarmeo, margen: margenFarmeo, derecha: true}
+	listas.Add(1)
+	nuevaVentana(farmeo, "/farmeo", datos, false, nil, &listas)
+	listas.Wait()
+	go seguirSesion(busqueda, ruta, farmeo)
+	atenderAtajo(busqueda, farmeo)
 }
 
 // Quita las descargas anteriores de este mismo programa, como "bitacora-local (1).exe".
@@ -304,5 +323,5 @@ func startVentanas() {
 			fmt.Println("[bitacora] Instala Microsoft Edge WebView2 Runtime si quieres usarlas.")
 		}
 	}()
-	fmt.Println("Alt+E: abrir o cerrar la búsqueda de mapas.")
+	fmt.Println("Alt+E: abrir o cerrar la búsqueda de mapas. Alt+R: zonas de farmeo.")
 }
