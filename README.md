@@ -37,3 +37,5 @@ Desde la versión 1.1 el programa abre dos ventanas siempre encima del juego:
 Toman el grupo de la página: entra a un grupo y pulsa «Juego instalado: detectar por red».
 Necesitan Microsoft Edge WebView2 Runtime, que ya trae Windows 11. Si falta, la detección del mapa sigue funcionando igual.
 Albion debe estar en ventana sin bordes: en pantalla completa exclusiva ninguna ventana puede ir encima.
+
+Al abrirse, el programa borra las descargas anteriores de sí mismo que estén en su misma carpeta, como `bitacora-local (1).exe`. Solo toca archivos con ese nombre, más antiguos y que contengan este programa.

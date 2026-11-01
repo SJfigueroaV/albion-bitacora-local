@@ -6,6 +6,7 @@ package main
 // y eso no debe tumbar la detección del mapa.
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -243,12 +245,45 @@ func runVentanas() {
 	atenderAtajo(busqueda)
 }
 
+// Quita las descargas anteriores de este mismo programa, como "bitacora-local (1).exe".
+// Solo en su carpeta, solo con ese nombre, solo si son más antiguas y solo si de verdad son este programa.
+func limpiarAnteriores(exe string) {
+	propio, err := os.Stat(exe)
+	if err != nil {
+		return
+	}
+	dir := filepath.Dir(exe)
+	archivos, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, a := range archivos {
+		nombre := strings.ToLower(a.Name())
+		if a.IsDir() || !strings.HasPrefix(nombre, "bitacora-local") || !strings.HasSuffix(nombre, ".exe") {
+			continue
+		}
+		ruta := filepath.Join(dir, a.Name())
+		info, err := os.Stat(ruta)
+		if err != nil || os.SameFile(info, propio) || !info.ModTime().Before(propio.ModTime()) {
+			continue
+		}
+		contenido, err := os.ReadFile(ruta)
+		if err != nil || !bytes.Contains(contenido, []byte(web)) {
+			continue
+		}
+		if os.Remove(ruta) == nil { // si esa copia sigue abierta, Windows lo impide y queda para otra vez
+			fmt.Println("[bitacora] Quité la versión anterior:", a.Name())
+		}
+	}
+}
+
 // Lanza las ventanas sin arriesgar la detección: si fallan, este proceso sigue igual.
 func startVentanas() {
 	exe, err := os.Executable()
 	if err != nil {
 		return
 	}
+	limpiarAnteriores(exe)
 	registro, _ := os.Create(filepath.Join(filepath.Dir(exe), "bitacora-ventanas.log"))
 	cmd := execCommand(exe, "--ventanas")
 	cmd.Stdout, cmd.Stderr = registro, registro
