@@ -1,7 +1,7 @@
 package main
 
 // Ventanas de escritorio para Windows, las mismas /buscar y /ruta que usa bspwm en Linux:
-// la búsqueda aparece con Ctrl+Shift+E y la navegación solo durante una ruta.
+// la búsqueda aparece con Alt+E y la navegación solo durante una ruta.
 // Corren en un proceso aparte porque la biblioteca de WebView2 cierra el programa si algo falla,
 // y eso no debe tumbar la detección del mapa.
 
@@ -27,6 +27,7 @@ const web = "https://bitacora-avalon-6d49.web.app"
 
 const (
 	anchoBusqueda, altoBusqueda = 560, 96
+	altoVista                   = 400
 	anchoRuta, altoRuta         = 400, 60
 	margenBusqueda, margenRuta  = 240, 12
 	fuera                       = -3000 // apartada de la pantalla: conserva el foco del campo de texto
@@ -43,7 +44,7 @@ const (
 	swpFrameChanged             = 0x0020
 	hwndTopmost                 = ^uintptr(0)
 	smCxScreen                  = 0
-	modShift, modControl        = 0x0004, 0x0002
+	modAlt                      = 0x0001
 	modNoRepeat                 = 0x4000
 	vkE                         = 0x45
 	wmHotkey, wmTimer           = 0x0312, 0x0113
@@ -188,8 +189,8 @@ func seguirSesion(busqueda, ruta *ventana) {
 // El atajo y el clic fuera se atienden en un hilo propio: no dependen de ninguna ventana.
 func atenderAtajo(busqueda *ventana) {
 	runtime.LockOSThread()
-	if ok, _, _ := registerHotKey.Call(0, 1, modControl|modShift|modNoRepeat, vkE); ok == 0 {
-		fmt.Println("Otro programa ya usa Ctrl+Shift+E.")
+	if ok, _, _ := registerHotKey.Call(0, 1, modAlt|modNoRepeat, vkE); ok == 0 {
+		fmt.Println("Otro programa ya usa Alt+E.")
 	}
 	setTimer.Call(0, 0, 150, 0)
 	var msg struct {
@@ -234,7 +235,15 @@ func runVentanas() {
 	ruta := &ventana{ancho: anchoRuta, alto: altoRuta, margen: margenRuta}
 	var listas sync.WaitGroup
 	listas.Add(1)
-	nuevaVentana(busqueda, "/buscar", datos, false, nil, &listas)
+	nuevaVentana(busqueda, "/buscar", datos, false, func(w webview2.WebView) {
+		w.Bind("bitacoraVista", func(activa bool) { // la imagen del mapa necesita más alto
+			busqueda.alto = altoBusqueda
+			if activa {
+				busqueda.alto = altoVista
+			}
+			busqueda.mover(busqueda.visible)
+		})
+	}, &listas)
 	listas.Wait() // WebView2 no admite crear su entorno dos veces a la vez sobre la misma carpeta
 	listas.Add(1)
 	nuevaVentana(ruta, "/ruta", datos, true, func(w webview2.WebView) {
@@ -295,5 +304,5 @@ func startVentanas() {
 			fmt.Println("[bitacora] Instala Microsoft Edge WebView2 Runtime si quieres usarlas.")
 		}
 	}()
-	fmt.Println("Ctrl+Shift+E: abrir o cerrar la búsqueda de mapas.")
+	fmt.Println("Alt+E: abrir o cerrar la búsqueda de mapas.")
 }

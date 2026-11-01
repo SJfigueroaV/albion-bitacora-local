@@ -31,7 +31,7 @@ SHA-256 de `bitacora-local.exe` v1.0.0: `447603964a80beb845e15337d570d629189ccf4
 
 Desde la versión 1.1 el programa abre dos ventanas siempre encima del juego:
 
-- **Búsqueda:** `Ctrl+Shift+E` la muestra y la oculta. También se oculta al hacer clic fuera.
+- **Búsqueda:** `Alt+E` la muestra y la oculta. También se oculta al hacer clic fuera. Al agregar un mapa muestra su imagen.
 - **Navegación:** indica el siguiente mapa, y solo se ve mientras sigues una ruta.
 
 Toman el grupo de la página: entra a un grupo y pulsa «Juego instalado: detectar por red».
