@@ -25,7 +25,7 @@ const web = "https://bitacora-avalon-6d49.web.app"
 
 const (
 	anchoBusqueda, altoBusqueda = 560, 96
-	anchoRuta, altoRuta         = 460, 70
+	anchoRuta, altoRuta         = 400, 60
 	margenBusqueda, margenRuta  = 240, 12
 	fuera                       = -3000 // apartada de la pantalla: conserva el foco del campo de texto
 	opacidadRuta                = 148   // de 255, el 58 % que usa picom en Linux
