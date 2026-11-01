@@ -47,6 +47,18 @@ type state struct {
 	Client string  `json:"client"`
 }
 
+// Grupo y jugador que abrió el navegador, para que las ventanas de Windows entren sin pedir nada.
+type session struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+	Pid  string `json:"pid"`
+}
+
+var current struct {
+	sync.Mutex
+	session
+}
+
 var hub = struct {
 	sync.Mutex
 	cur       state
@@ -208,12 +220,24 @@ func cors(w http.ResponseWriter, origin string) {
 
 func events(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
+	// Solo para las ventanas del propio programa: ninguna página web manda una petición sin origen.
+	if r.URL.Path == "/session" && origin == "" {
+		current.Lock()
+		defer current.Unlock()
+		json.NewEncoder(w).Encode(current.session)
+		return
+	}
 	// Una web ajena no debe poder leer en qué mapa estás.
 	if !origins[origin] || r.URL.Path != "/events" {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 	cors(w, origin)
+	if q := r.URL.Query(); q.Get("g") != "" {
+		current.Lock()
+		current.session = session{q.Get("g"), q.Get("name"), q.Get("pid")}
+		current.Unlock()
+	}
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Methods", "GET")
 		w.WriteHeader(http.StatusNoContent)
@@ -250,7 +274,12 @@ func main() {
 	client := flag.String("client", "", "ruta del Albion Data Client")
 	once := flag.Bool("once", false, "no reiniciar el cliente si se cierra")
 	debug := flag.Bool("debug", false, "guarda la salida del cliente en bitacora-captura.log")
+	ventanas := flag.Bool("ventanas", false, "uso interno: abre las ventanas de búsqueda y ruta")
 	flag.Parse()
+	if *ventanas {
+		runVentanas()
+		return
+	}
 	if err := json.Unmarshal(clustersRaw, &clusters); err != nil {
 		fatal("lista de mapas danada: " + err.Error())
 	}
@@ -266,6 +295,7 @@ func main() {
 			fmt.Println("[bitacora] error del servidor local:", err)
 		}
 	}()
+	startVentanas()
 	path := *client
 	if path == "" {
 		if path, err = findClient(); err != nil {
@@ -274,6 +304,8 @@ func main() {
 	}
 	runClient(path, *once, *debug)
 }
+
+var execCommand = exec.Command
 
 func fatal(msg string) {
 	fmt.Println(msg)

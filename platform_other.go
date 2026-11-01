@@ -21,6 +21,10 @@ func prepareCmd(*exec.Cmd) {}
 
 func waitEnter() {}
 
+func startVentanas() {}
+
+func runVentanas() {}
+
 func findClient() (string, error) {
 	path, err := exec.LookPath("albiondata-client")
 	if err != nil {

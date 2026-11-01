@@ -26,3 +26,14 @@ CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags '-s -w' -o b
 ```
 
 SHA-256 de `bitacora-local.exe` v1.0.0: `447603964a80beb845e15337d570d629189ccf4ee676e4aeaac835ac8267c56f`
+
+## Ventanas sobre el juego (Windows)
+
+Desde la versión 1.1 el programa abre dos ventanas siempre encima del juego:
+
+- **Búsqueda:** `Ctrl+Shift+E` la muestra y la oculta. También se oculta al hacer clic fuera.
+- **Navegación:** indica el siguiente mapa, y solo se ve mientras sigues una ruta.
+
+Toman el grupo de la página: entra a un grupo y pulsa «Juego instalado: detectar por red».
+Necesitan Microsoft Edge WebView2 Runtime, que ya trae Windows 11. Si falta, la detección del mapa sigue funcionando igual.
+Albion debe estar en ventana sin bordes: en pantalla completa exclusiva ninguna ventana puede ir encima.
