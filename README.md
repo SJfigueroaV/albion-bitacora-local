@@ -31,7 +31,7 @@ SHA-256 de `bitacora-local.exe` v1.0.0: `447603964a80beb845e15337d570d629189ccf4
 
 Desde la versión 1.1 el programa abre ventanas siempre encima del juego:
 
-- **Búsqueda:** `Alt+E` la muestra y la oculta. También se oculta al hacer clic fuera. Al agregar un mapa muestra su imagen.
+- **Búsqueda:** `Alt+E` la muestra y la oculta. También se oculta al hacer clic fuera. Al agregar un mapa muestra su imagen. Con la detección por pantalla, también se abre sola a la derecha al registrar un portal nuevo, sin quitarle el teclado al juego.
 - **Navegación:** indica el siguiente mapa, y solo se ve mientras sigues una ruta.
 - **Zonas de farmeo:** `Alt+R` muestra los mapas con zonas registradas, pendientes o todos.
 

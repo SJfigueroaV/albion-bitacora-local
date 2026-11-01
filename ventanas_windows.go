@@ -84,6 +84,7 @@ type ventana struct {
 	margen  int
 	visible bool
 	derecha bool
+	sola    bool // se abrió sola: el juego conserva el teclado y no cuenta como clic fuera
 }
 
 func escala(n int) int {
@@ -226,8 +227,12 @@ func atenderAtajo(busqueda, farmeo *ventana) {
 				continue
 			}
 			if busqueda.visible {
+				sola := busqueda.sola
+				busqueda.sola, busqueda.derecha = false, false
 				busqueda.mover(false)
-				setForegroundWindow.Call(anterior)
+				if !sola {
+					setForegroundWindow.Call(anterior)
+				}
 			} else {
 				anterior, _, _ = getForegroundWindow.Call()
 				busqueda.mover(true)
@@ -235,7 +240,11 @@ func atenderAtajo(busqueda, farmeo *ventana) {
 				abierta = time.Now()
 			}
 		case wmTimer:
-			if frente, _, _ := getForegroundWindow.Call(); busqueda.visible && frente != busqueda.hwnd && frente != 0 && time.Since(abierta) > 400*time.Millisecond {
+			frente, _, _ := getForegroundWindow.Call()
+			if frente == busqueda.hwnd {
+				busqueda.sola = false // ya la está usando: desde aquí vale el clic fuera
+			}
+			if busqueda.visible && !busqueda.sola && frente != busqueda.hwnd && frente != 0 && time.Since(abierta) > 400*time.Millisecond {
 				busqueda.mover(false) // clic fuera: el foco ya está donde el jugador lo puso
 			}
 		}
@@ -251,6 +260,10 @@ func runVentanas() {
 	var listas sync.WaitGroup
 	listas.Add(1)
 	nuevaVentana(busqueda, "/buscar", datos, false, func(w webview2.WebView) {
+		w.Bind("bitacoraMostrar", func() { // ficha abierta al registrar un portal: a la derecha para no tapar el mapa
+			busqueda.sola, busqueda.derecha = true, true
+			busqueda.mover(true)
+		})
 		w.Bind("bitacoraVista", func(activa bool) { // la imagen del mapa necesita más alto
 			busqueda.alto = altoBusqueda
 			if activa {
