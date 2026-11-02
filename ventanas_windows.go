@@ -2,8 +2,7 @@ package main
 
 // Ventanas de escritorio para Windows, las mismas /buscar y /ruta que usa bspwm en Linux:
 // la búsqueda aparece con Alt+E y la navegación solo durante una ruta.
-// Corren en un proceso aparte porque la biblioteca de WebView2 cierra el programa si algo falla,
-// y eso no debe tumbar la detección del mapa.
+// Corren en un proceso aparte porque la biblioteca de WebView2 cierra el programa si algo falla.
 
 import (
 	"bytes"
@@ -318,7 +317,7 @@ func limpiarAnteriores(exe string) {
 	}
 }
 
-// Lanza las ventanas sin arriesgar la detección: si fallan, este proceso sigue igual.
+// Lanza las ventanas en un proceso aparte: si WebView2 falla, se puede avisar antes de cerrar.
 func startVentanas() {
 	exe, err := os.Executable()
 	if err != nil {
@@ -332,8 +331,8 @@ func startVentanas() {
 	go func() {
 		inicio := time.Now()
 		if err := cmd.Run(); err != nil && time.Since(inicio) < time.Minute {
-			fmt.Println("[bitacora] No pude abrir las ventanas de búsqueda y ruta. La detección del mapa sigue funcionando.")
-			fmt.Println("[bitacora] Instala Microsoft Edge WebView2 Runtime si quieres usarlas.")
+			fmt.Println("[bitacora] No pude abrir las ventanas sobre el juego.")
+			fmt.Println("[bitacora] Instala Microsoft Edge WebView2 Runtime y vuelve a abrir este programa.")
 		}
 	}()
 	fmt.Println("Alt+E: abrir o cerrar la búsqueda de mapas. Alt+R: zonas de farmeo.")
